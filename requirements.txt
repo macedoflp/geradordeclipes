@@ -1,0 +1,7 @@
+streamlit
+yt-dlp==2024.12.23
+numpy
+pydub
+openai-whisper
+torch
+ffmpeg-python
