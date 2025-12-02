@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+
+# Pastas de dados/outputs gerados pelo script criaclipes.py
+# (Ajuste estes nomes se o seu script usar pastas diferentes)
+
+videos_baixados/
+videos_finais/
+videos_recortados/
+legendas/
+
+# Arquivos de log e bancos de dados locais
+*.log
+*.sqlite
+*.db
+
+# Streamlit (configuração local)
+.streamlit/
+
+# yt-dlp/youtube-dl (pastas de cache)
+.yt-dlp_cache/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

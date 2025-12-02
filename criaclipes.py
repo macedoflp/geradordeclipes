@@ -1,4 +1,3 @@
-
 import os
 import uuid
 import subprocess
@@ -10,14 +9,20 @@ import streamlit as st
 import time
 
 
+PASTAS = {
+    "baixados": "videos_baixados",
+    "legendas": "legendas",
+    "recortes": "videos_recortados",
+    "finais": "videos_finais",
+}
+
+for p in PASTAS.values():
+    os.makedirs(p, exist_ok=True)
+
 
 def obter_cookies():
     cookies_path = "cookies.txt"
-    if os.path.exists(cookies_path):
-        return cookies_path
-    else:
-        return None
-
+    return cookies_path if os.path.exists(cookies_path) else None
 
 
 def detectar_melhor_momento(url, wanted_duration=25):
@@ -42,14 +47,13 @@ def detectar_melhor_momento(url, wanted_duration=25):
     return None, None
 
 
-
 def detectar_pico_audio(video_path, wanted_duration=25):
     audio = AudioSegment.from_file(video_path)
     samples = np.array(audio.get_array_of_samples())
     sample_rate = audio.frame_rate
 
     chunk = sample_rate * 1
-    energies = [np.mean(samples[i:i+chunk]**2) for i in range(0, len(samples), chunk)]
+    energies = [np.mean(samples[i:i + chunk] ** 2) for i in range(0, len(samples), chunk)]
 
     best_second = int(np.argmax(energies))
     start = max(0, best_second - wanted_duration // 2)
@@ -57,9 +61,8 @@ def detectar_pico_audio(video_path, wanted_duration=25):
     return start, wanted_duration
 
 
-
 def baixar_video(url, cookies):
-    output_name = f"video_{uuid.uuid4()}.mp4"
+    output_name = os.path.join(PASTAS["baixados"], f"video_{uuid.uuid4()}.mp4")
 
     ydl_opts = {
         "outtmpl": output_name,
@@ -75,9 +78,8 @@ def baixar_video(url, cookies):
     return output_name
 
 
-
 def cortar_video(input_file, start, duration):
-    output_file = f"recorte_{uuid.uuid4()}.mp4"
+    output_file = os.path.join(PASTAS["recortes"], f"recorte_{uuid.uuid4()}.mp4")
 
     cmd = [
         "ffmpeg",
@@ -95,18 +97,18 @@ def cortar_video(input_file, start, duration):
     return output_file
 
 
-
 def format_timestamp(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
     s = seconds % 60
     return f"{h:02}:{m:02}:{s:06.3f}".replace(".", ",")
 
+
 def gerar_srt(video, modelo="small"):
     model = whisper.load_model(modelo)
     result = model.transcribe(video)
 
-    srt_path = f"subs_{uuid.uuid4()}.srt"
+    srt_path = os.path.join(PASTAS["legendas"], f"subs_{uuid.uuid4()}.srt")
 
     with open(srt_path, "w", encoding="utf-8") as f:
         for i, seg in enumerate(result["segments"], start=1):
@@ -118,9 +120,8 @@ def gerar_srt(video, modelo="small"):
     return srt_path
 
 
-
 def gerar_video_final(video, srt):
-    output = f"final_{uuid.uuid4()}.mp4"
+    output = os.path.join(PASTAS["finais"], f"final_{uuid.uuid4()}.mp4")
 
     force_style = (
         "FontName=Anton,"
@@ -130,7 +131,7 @@ def gerar_video_final(video, srt):
         "BorderStyle=1,"
         "Outline=2,"
         "Shadow=1,"
-        "WrapStyle=0"  # força apenas uma linha
+        "WrapStyle=0"
     )
 
     cmd = [
@@ -146,7 +147,6 @@ def gerar_video_final(video, srt):
 
     subprocess.run(cmd, check=True)
     return output
-
 
 
 st.title("🎬 Gerador de Clipes YouTube")
@@ -183,23 +183,19 @@ if st.button("Processar Vídeo"):
             status_text.text("📥 Baixando vídeo...")
             temp_video = baixar_video(url, cookies)
             progress_bar.progress(40)
-            time.sleep(1)
 
             if start_val is None and s is None:
                 status_text.text("🎧 Detectando pico de áudio...")
                 s, d = detectar_pico_audio(temp_video, duration_val)
                 progress_bar.progress(50)
-                time.sleep(1)
 
             status_text.text("✂️ Cortando vídeo...")
             recorte = cortar_video(temp_video, s, d)
             progress_bar.progress(60)
-            time.sleep(1)
 
             status_text.text("📝 Gerando legendas...")
             srt = gerar_srt(recorte)
             progress_bar.progress(80)
-            time.sleep(1)
 
             status_text.text("🎬 Gerando vídeo final...")
             final_video = gerar_video_final(recorte, srt)
