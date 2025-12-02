@@ -7,6 +7,11 @@ import whisper
 import streamlit as st
 import time
 
+import os
+
+print("DEBUG cookies.txt existe? ", os.path.exists("cookies.txt"))
+if os.path.exists("cookies.txt"):
+    print("DEBUG tamanho cookies:", os.path.getsize("cookies.txt"))
 
 
 def obter_cookies():
