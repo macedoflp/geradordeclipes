@@ -4,6 +4,12 @@ Este `README.md` fornece as instruções necessárias para configurar o ambiente
 
 ---
 
+### Simplifique usando docker
+
+```bash
+docker compose up --build
+```
+
 ### 📋 Pré-requisitos
 
 Antes de instalar as dependências, você deve garantir que possui o seguinte instalado no seu sistema:

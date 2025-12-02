@@ -1,8 +1,0 @@
-{
-  "name": "Gerador de Clipes",
-  "build": {
-    "dockerfile": "../Dockerfile"
-  },
-  "forwardPorts": [8501],
-  "postCreateCommand": "echo 'Ambiente pronto!'"
-}
