@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  gerador_clipes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gerador_clipes
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./videos_baixados:/app/videos_baixados
+      - ./legendas:/app/legendas
+      - ./videos_recortados:/app/videos_recortados
+      - ./videos_finais:/app/videos_finais
+    environment:
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+      PYTHONUNBUFFERED: "1"
+    restart: unless-stopped
