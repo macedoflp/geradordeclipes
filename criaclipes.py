@@ -1,7 +1,6 @@
 import os
 import uuid
 import subprocess
-import browser_cookie3
 import numpy as np
 from yt_dlp import YoutubeDL
 import whisper
@@ -9,28 +8,33 @@ from pydub import AudioSegment
 import streamlit as st
 import time
 
-
+# =====================================================
+# 1. Obter cookies APENAS via cookies.txt
+# =====================================================
 
 def obter_cookies():
     cookies_path = "cookies.txt"
     if os.path.exists(cookies_path):
         return cookies_path
     else:
-        try:
-            return browser_cookie3.chrome(domain_name=".youtube.com")
-        except:
-            try:
-                return browser_cookie3.firefox(domain_name=".youtube.com")
-            except:
-                return None
+        return None
+
+
+# =====================================================
+# 2. Detectar melhor momento via heatmap do YouTube
+# =====================================================
 
 def detectar_melhor_momento(url, wanted_duration=25):
     ydl_opts = {"skip_download": True, "extract_flat": False}
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
+
     heatmap = info.get("heatmap", None)
     duration = info.get("duration", None)
-    if not duration: return None, None
+
+    if not duration:
+        return None, None
+
     if heatmap:
         melhor = max(heatmap, key=lambda h: h["heatMarkerIntensityScoreNormalized"])
         start = melhor["start"]
@@ -38,32 +42,56 @@ def detectar_melhor_momento(url, wanted_duration=25):
         meio = (start + end) / 2
         inicio = max(0, int(meio - wanted_duration / 2))
         return inicio, wanted_duration
+
     return None, None
+
+
+# =====================================================
+# 3. Detectar pico de áudio
+# =====================================================
 
 def detectar_pico_audio(video_path, wanted_duration=25):
     audio = AudioSegment.from_file(video_path)
     samples = np.array(audio.get_array_of_samples())
     sample_rate = audio.frame_rate
+
     chunk = sample_rate * 1
     energies = [np.mean(samples[i:i+chunk]**2) for i in range(0, len(samples), chunk)]
+
     best_second = int(np.argmax(energies))
     start = max(0, best_second - wanted_duration // 2)
+
     return start, wanted_duration
+
+
+# =====================================================
+# 4. Baixar vídeo
+# =====================================================
 
 def baixar_video(url, cookies):
     output_name = f"video_{uuid.uuid4()}.mp4"
-    ydl_opts = {"outtmpl": output_name, "format": "mp4"}
+
+    ydl_opts = {
+        "outtmpl": output_name,
+        "format": "mp4",
+    }
+
     if isinstance(cookies, str):
         ydl_opts["cookiefile"] = cookies
-    elif cookies is not None:
-        ydl_opts["cookiesfrombrowser"] = ("chrome",)
+
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
+
     return output_name
 
 
+# =====================================================
+# 5. Cortar vídeo
+# =====================================================
+
 def cortar_video(input_file, start, duration):
     output_file = f"recorte_{uuid.uuid4()}.mp4"
+
     cmd = [
         "ffmpeg",
         "-i", input_file,
@@ -75,9 +103,14 @@ def cortar_video(input_file, start, duration):
         output_file,
         "-y"
     ]
+
     subprocess.run(cmd, check=True)
     return output_file
 
+
+# =====================================================
+# 6. Criar SRT (1 linha obrigatória)
+# =====================================================
 
 def format_timestamp(seconds):
     h = int(seconds // 3600)
@@ -88,19 +121,26 @@ def format_timestamp(seconds):
 def gerar_srt(video, modelo="small"):
     model = whisper.load_model(modelo)
     result = model.transcribe(video)
+
     srt_path = f"subs_{uuid.uuid4()}.srt"
+
     with open(srt_path, "w", encoding="utf-8") as f:
         for i, seg in enumerate(result["segments"], start=1):
             texto = seg["text"].strip().replace("\n", " ")
             f.write(f"{i}\n")
             f.write(f"{format_timestamp(seg['start'])} --> {format_timestamp(seg['end'])}\n")
             f.write(texto + "\n\n")
+
     return srt_path
 
 
+# =====================================================
+# 7. Renderizar vídeo final
+# =====================================================
 
 def gerar_video_final(video, srt):
     output = f"final_{uuid.uuid4()}.mp4"
+
     force_style = (
         "FontName=Anton,"
         "FontSize=20,"
@@ -109,8 +149,9 @@ def gerar_video_final(video, srt):
         "BorderStyle=1,"
         "Outline=2,"
         "Shadow=1,"
-        "WrapStyle=0"  # <- força apenas uma linha
+        "WrapStyle=0"  # força apenas uma linha
     )
+
     cmd = [
         "ffmpeg",
         "-i", video,
@@ -121,10 +162,17 @@ def gerar_video_final(video, srt):
         output,
         "-y"
     ]
+
     subprocess.run(cmd, check=True)
     return output
 
+
+# =====================================================
+# 8. Interface Streamlit
+# =====================================================
+
 st.title("🎬 Gerador de Clipes YouTube")
+
 url = st.text_input("URL do vídeo")
 start_input = st.text_input("Início (s, opcional)")
 duration_input = st.text_input("Duração (s, padrão 25)")
@@ -178,11 +226,9 @@ if st.button("Processar Vídeo"):
             status_text.text("🎬 Gerando vídeo final...")
             final_video = gerar_video_final(recorte, srt)
             progress_bar.progress(100)
-            status_text.text("✅ Vídeo finalizado!")
 
             st.success("🎉 Vídeo processado com sucesso!")
             st.video(final_video)
-
 
             with open(final_video, "rb") as f:
                 st.download_button(
