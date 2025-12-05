@@ -26,10 +26,10 @@ jobs:
           pip install pyinstaller browser_cookie3
 
       - name: Build EXE (Tkinter)
-        run: pyinstaller --onefile --windowed --add-data "cookies.txt;." criaclipes_tkinter.py
+        run: pyinstaller --onefile --windowed --add-data "cookies.txt;." criaclipes.py
 
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
         with:
           name: criaclipes-exe
-          path: dist/criaclipes_tkinter.exe
+          path: dist/criaclipes.exe
