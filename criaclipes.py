@@ -12,12 +12,15 @@ from tkinter import ttk, messagebox
 
 
 def resource_path(path: str):
+    """Retorna o caminho absoluto do arquivo, mesmo dentro do EXE."""
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, path)
     return os.path.abspath(path)
 
 
 def ffmpeg_path():
+    """Retorna o caminho correto do ffmpeg (externo ou dentro do EXE)."""
+
     if hasattr(sys, "_MEIPASS"):
         candidate = os.path.join(sys._MEIPASS, "ffmpeg.exe")
         if os.path.exists(candidate):
@@ -49,6 +52,7 @@ for p in PASTAS.values():
 
 
 def obter_cookies():
+    """Retorna o caminho do arquivo cookies.txt (ou None)."""
     cookies_path = resource_path("cookies.txt")
     return cookies_path if os.path.exists(cookies_path) else None
 
@@ -145,10 +149,8 @@ def cortar_video(input_file, start, duration):
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"ffmpeg falhou ao cortar o vídeo: {e}")
-
     if not os.path.exists(output_file):
         raise RuntimeError("Corte falhou: arquivo de saída não criado.")
-
     return output_file
 
 
@@ -165,11 +167,7 @@ def gerar_srt(video, modelo="small"):
 
     try:
         model = whisper.load_model(modelo)
-        result = model.transcribe(
-            video,
-            verbose=False,
-            no_progress=True  # <---- AQUI ESTÁ A CORREÇÃO
-        )
+        result = model.transcribe(video)
     except Exception as e:
         raise RuntimeError(f"Erro ao transcrever com Whisper: {e}")
 
@@ -193,9 +191,7 @@ def gerar_srt(video, modelo="small"):
 
     if not os.path.exists(srt_path):
         raise RuntimeError("Falha ao criar arquivo SRT.")
-
     return srt_path
-
 
 
 def gerar_video_final(video, srt):
@@ -237,7 +233,6 @@ def gerar_video_final(video, srt):
 
     if not os.path.exists(output):
         raise RuntimeError("Falha ao gerar vídeo final.")
-
     return output
 
 
@@ -314,6 +309,7 @@ def processar():
         messagebox.showinfo("Sucesso", f"Vídeo final gerado em:\n{final_video}")
 
     except Exception as e:
+        # Mostra traceback reduzido para ajudar debugging (sem inundar o usuário)
         import traceback
         tb = traceback.format_exc()
         messagebox.showerror("Erro", f"{e}\n\nDetalhes:\n{tb}")
