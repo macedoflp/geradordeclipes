@@ -11,10 +11,8 @@ jobs:
     runs-on: windows-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -24,47 +22,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install yt-dlp openai-whisper pydub numpy whisper
+          pip install yt-dlp openai-whisper pydub numpy pillow
           pip install pyinstaller browser_cookie3
 
-
-
-      - name: Download ffmpeg
-        shell: powershell
-        run: |
-          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
-          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg_extract
-          
-          # Procurar ffmpeg.exe e ffprobe.exe
-          $exe = Get-ChildItem -Recurse -Path "ffmpeg_extract" | Where-Object { $_.Name -eq "ffmpeg.exe" }
-          Copy-Item $exe.FullName "./ffmpeg.exe"
-
-          $probe = Get-ChildItem -Recurse -Path "ffmpeg_extract" | Where-Object { $_.Name -eq "ffprobe.exe" }
-          Copy-Item $probe.FullName "./ffprobe.exe"
-
-          dir .
-
-
-      - name: Create empty cookies.txt if missing
-        run: |
-          if not exist cookies.txt (
-            echo # Arquivo de cookies vazio > cookies.txt
-          )
-
-
-
-      - name: Build EXE
-        shell: powershell
-        run: |
-          pyinstaller --onefile --windowed `
-            --add-data "cookies.txt;." `
-            --add-data "ffmpeg.exe;." `
-            --add-data "ffprobe.exe;." `
-            criaclipes.py
-
-          dir dist
-
-
+      - name: Build EXE (Tkinter)
+        run: pyinstaller --onefile --windowed --add-data "cookies.txt;." criaclipes.py
 
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4

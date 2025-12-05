@@ -1,4 +1,3 @@
-import sys
 import os
 import uuid
 import subprocess
@@ -8,24 +7,6 @@ import whisper
 from pydub import AudioSegment
 import tkinter as tk
 from tkinter import ttk, messagebox
-
-
-
-
-def resource_path(path: str):
-    """Retorna o caminho absoluto do arquivo, mesmo dentro do EXE."""
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, path)
-    return os.path.abspath(path)
-
-
-def ffmpeg_path():
-    """Retorna o caminho correto do ffmpeg (externo ou dentro do EXE)."""
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, "ffmpeg.exe")
-    return "ffmpeg"
-
-
 
 
 PASTAS = {
@@ -42,16 +23,13 @@ for p in PASTAS.values():
 
 
 def obter_cookies():
-    """Retorna o caminho do arquivo cookies.txt."""
-    cookies_path = resource_path("cookies.txt")
+    """Retorna o arquivo de cookies, se existir."""
+    cookies_path = "cookies.txt"
     return cookies_path if os.path.exists(cookies_path) else None
-
-
 
 
 def detectar_melhor_momento(url, wanted_duration=25):
     ydl_opts = {"skip_download": True, "extract_flat": False}
-
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
 
@@ -87,7 +65,6 @@ def detectar_pico_audio(video_path, wanted_duration=25):
 
 def baixar_video(url, cookies):
     output_name = os.path.join(PASTAS["baixados"], f"video_{uuid.uuid4()}.mp4")
-
     ydl_opts = {
         "outtmpl": output_name,
         "format": "mp4",
@@ -106,12 +83,13 @@ def cortar_video(input_file, start, duration):
     output_file = os.path.join(PASTAS["recortes"], f"recorte_{uuid.uuid4()}.mp4")
 
     cmd = [
-        ffmpeg_path(),
+        "ffmpeg",
         "-i", input_file,
         "-ss", str(start),
         "-t", str(duration),
         "-c:v", "libx264",
         "-c:a", "aac",
+        "-strict", "experimental",
         output_file,
         "-y"
     ]
@@ -157,15 +135,13 @@ def gerar_video_final(video, srt):
         "WrapStyle=0"
     )
 
-
-    srt_abs = os.path.abspath(srt)
-
     cmd = [
-        ffmpeg_path(),
+        "ffmpeg",
         "-i", video,
-        "-vf", f"subtitles='{srt_abs}':force_style='{force_style}'",
+        "-vf", f"subtitles={srt}:force_style='{force_style}'",
         "-c:v", "libx264",
         "-c:a", "aac",
+        "-strict", "experimental",
         output,
         "-y"
     ]
@@ -234,9 +210,10 @@ def processar():
         messagebox.showerror("Erro", str(e))
 
 
+
 root = tk.Tk()
 root.title("Gerador de Clipes YouTube")
-root.geometry("460x310")
+root.geometry("450x300")
 
 tk.Label(root, text="URL do vídeo:").pack(anchor="w", padx=10)
 entrada_url = tk.Entry(root, width=60)
