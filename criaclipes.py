@@ -1,19 +1,5 @@
 import sys
 import os
-
-class NoTQDM:
-    def __init__(self, *a, **k): pass
-    def update(self, *a, **k): pass
-    def write(self, *a, **k): pass
-    def close(self): pass
-    def __enter__(self): return self
-    def __exit__(self, *a): pass
-    def __call__(self, *a, **k): return self
-
-sys.modules['tqdm'] = NoTQDM()
-sys.modules['tqdm.std'] = NoTQDM()
-sys.modules['tqdm.std.tqdm'] = NoTQDM()
-
 import uuid
 import subprocess
 import shutil
