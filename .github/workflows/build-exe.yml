@@ -46,10 +46,11 @@ jobs:
 
 
       - name: Create empty cookies.txt if missing
+        shell: powershell
         run: |
-          if not exist cookies.txt (
-            echo # Arquivo de cookies vazio > cookies.txt
-          )
+          if (-not (Test-Path "cookies.txt")) {
+            Set-Content -Path "cookies.txt" -Value "# Arquivo de cookies vazio"
+          }
 
 
 
