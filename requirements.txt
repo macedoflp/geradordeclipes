@@ -1,4 +1,4 @@
-streamlit
+tkinter
 yt-dlp==2024.12.23
 numpy
 pydub

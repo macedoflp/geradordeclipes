@@ -5,8 +5,8 @@ import numpy as np
 from yt_dlp import YoutubeDL
 import whisper
 from pydub import AudioSegment
-import streamlit as st
-import time
+import tkinter as tk
+from tkinter import ttk, messagebox
 
 
 PASTAS = {
@@ -20,7 +20,10 @@ for p in PASTAS.values():
     os.makedirs(p, exist_ok=True)
 
 
+
+
 def obter_cookies():
+    """Retorna o arquivo de cookies, se existir."""
     cookies_path = "cookies.txt"
     return cookies_path if os.path.exists(cookies_path) else None
 
@@ -54,7 +57,6 @@ def detectar_pico_audio(video_path, wanted_duration=25):
 
     chunk = sample_rate * 1
     energies = [np.mean(samples[i:i + chunk] ** 2) for i in range(0, len(samples), chunk)]
-
     best_second = int(np.argmax(energies))
     start = max(0, best_second - wanted_duration // 2)
 
@@ -63,7 +65,6 @@ def detectar_pico_audio(video_path, wanted_duration=25):
 
 def baixar_video(url, cookies):
     output_name = os.path.join(PASTAS["baixados"], f"video_{uuid.uuid4()}.mp4")
-
     ydl_opts = {
         "outtmpl": output_name,
         "format": "mp4",
@@ -149,68 +150,87 @@ def gerar_video_final(video, srt):
     return output
 
 
-st.title("🎬 Gerador de Clipes YouTube")
 
-url = st.text_input("URL do vídeo")
-start_input = st.text_input("Início (s, opcional)")
-duration_input = st.text_input("Duração (s, padrão 25)")
 
-if st.button("Processar Vídeo"):
-    if not url.strip():
-        st.error("❌ Informe a URL do vídeo")
-    else:
-        start_val = int(start_input) if start_input.strip() else None
-        duration_val = int(duration_input) if duration_input.strip() else 25
+def processar():
+    url = entrada_url.get().strip()
+    inicio = entrada_inicio.get().strip()
+    duracao = entrada_duracao.get().strip()
 
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+    if not url:
+        messagebox.showerror("Erro", "Informe a URL do vídeo.")
+        return
 
-        try:
-            progress_bar.progress(5)
-            status_text.text("🍪 Carregando cookies...")
-            cookies = obter_cookies()
-            time.sleep(1)
+    inicio = int(inicio) if inicio else None
+    duracao = int(duracao) if duracao else 25
 
-            progress_bar.progress(10)
-            status_text.text("🔎 Detectando melhor momento...")
-            if start_val is None:
-                s, d = detectar_melhor_momento(url, duration_val)
-            else:
-                s, d = start_val, duration_val
-            time.sleep(1)
-            progress_bar.progress(20)
+    try:
+        progresso["value"] = 5
+        root.update_idletasks()
 
-            status_text.text("📥 Baixando vídeo...")
-            temp_video = baixar_video(url, cookies)
-            progress_bar.progress(40)
+        cookies = obter_cookies()
 
-            if start_val is None and s is None:
-                status_text.text("🎧 Detectando pico de áudio...")
-                s, d = detectar_pico_audio(temp_video, duration_val)
-                progress_bar.progress(50)
+        progresso["value"] = 10
+        root.update_idletasks()
 
-            status_text.text("✂️ Cortando vídeo...")
-            recorte = cortar_video(temp_video, s, d)
-            progress_bar.progress(60)
+        if inicio is None:
+            s, d = detectar_melhor_momento(url, duracao)
+        else:
+            s, d = inicio, duracao
 
-            status_text.text("📝 Gerando legendas...")
-            srt = gerar_srt(recorte)
-            progress_bar.progress(80)
+        progresso["value"] = 25
+        root.update_idletasks()
 
-            status_text.text("🎬 Gerando vídeo final...")
-            final_video = gerar_video_final(recorte, srt)
-            progress_bar.progress(100)
+        temp_video = baixar_video(url, cookies)
 
-            st.success("🎉 Vídeo processado com sucesso!")
-            st.video(final_video)
+        if inicio is None and s is None:
+            s, d = detectar_pico_audio(temp_video, duracao)
 
-            with open(final_video, "rb") as f:
-                st.download_button(
-                    label="📥 Baixar vídeo final",
-                    data=f,
-                    file_name="video_final.mp4",
-                    mime="video/mp4"
-                )
+        progresso["value"] = 40
+        root.update_idletasks()
 
-        except Exception as e:
-            st.error(f"❌ Ocorreu um erro: {e}")
+        recorte = cortar_video(temp_video, s, d)
+
+        progresso["value"] = 60
+        root.update_idletasks()
+
+        srt = gerar_srt(recorte)
+
+        progresso["value"] = 80
+        root.update_idletasks()
+
+        final_video = gerar_video_final(recorte, srt)
+
+        progresso["value"] = 100
+        root.update_idletasks()
+
+        messagebox.showinfo("Sucesso", f"Vídeo final gerado em:\n{final_video}")
+
+    except Exception as e:
+        messagebox.showerror("Erro", str(e))
+
+
+
+root = tk.Tk()
+root.title("Gerador de Clipes YouTube")
+root.geometry("450x300")
+
+tk.Label(root, text="URL do vídeo:").pack(anchor="w", padx=10)
+entrada_url = tk.Entry(root, width=60)
+entrada_url.pack(padx=10)
+
+tk.Label(root, text="Início (segundos, opcional):").pack(anchor="w", padx=10)
+entrada_inicio = tk.Entry(root, width=10)
+entrada_inicio.pack(padx=10)
+
+tk.Label(root, text="Duração (segundos):").pack(anchor="w", padx=10)
+entrada_duracao = tk.Entry(root, width=10)
+entrada_duracao.insert(0, "25")
+entrada_duracao.pack(padx=10)
+
+ttk.Button(root, text="Processar Vídeo", command=processar).pack(pady=15)
+
+progresso = ttk.Progressbar(root, orient="horizontal", length=350, mode="determinate")
+progresso.pack(pady=10)
+
+root.mainloop()

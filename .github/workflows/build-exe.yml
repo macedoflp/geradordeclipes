@@ -22,19 +22,17 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install yt-dlp openai-whisper pydub numpy pillow
           pip install pyinstaller browser_cookie3
 
-      - name: Build EXE
+      - name: Build EXE (Tkinter)
         run: |
-          pyinstaller --onefile `
-            --add-data "cookies.txt;." `
-            --hidden-import=whisper `
-            --hidden-import=browser_cookie3 `
-            criaclipes.py
+          pyinstaller --onefile --windowed ^
+            --add-data "cookies.txt;." ^
+            criaclipes_tkinter.py
 
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
         with:
           name: criaclipes-exe
-          path: dist/criaclipes.exe
+          path: dist/criaclipes_tkinter.exe
