@@ -6,6 +6,9 @@ __pycache__/
 .Python
 env
 venv
+build/criaclipes/
+dist
+
 
 # Pastas de dados/outputs gerados pelo script criaclipes.py
 # (Ajuste estes nomes se o seu script usar pastas diferentes)

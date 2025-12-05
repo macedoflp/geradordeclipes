@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     wget \
     unzip \
+    build-essential \
+    gcc \
+    libgl1 \
  && rm -rf /var/lib/apt/lists/*
 
 # Criar pasta de trabalho
@@ -26,6 +29,9 @@ RUN pip install --no-cache-dir \
     streamlit \
     numpy
 
+# Instalar PyInstaller (funciona no Python 3.10 slim)
+RUN pip install --no-cache-dir pyinstaller browser_cookie3
+
 # Copiar arquivos do projeto
 COPY . .
 
@@ -39,5 +45,5 @@ EXPOSE 8501
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 ENV STREAMLIT_SERVER_HEADLESS=true
 
-# Comando para rodar seu app Streamlit automaticamente
+# Comando padrão para rodar o app Streamlit automaticamente
 CMD ["streamlit", "run", "criaclipes.py", "--server.address=0.0.0.0"]
